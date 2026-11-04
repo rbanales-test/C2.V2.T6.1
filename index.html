@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MIDI Postal Dispatcher - Topic 6.1</title>
+    <style>
+        /* Coursera Brand Identity */
+        :root {
+            --coursera-blue: #0056D2;
+            --coursera-blue-hover: #00419e;
+            --text-main: #1F1F1F;
+            --text-secondary: #636363;
+            --bg-page: #F5F7F8;
+            --bg-panel: #FFFFFF;
+            --border-color: #E2E2E2;
+            --success-green: #00885A;
+            --warning-yellow: #FFC107;
+            --danger-red: #D32F2F;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', Arial, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.5;
+        }
+
+        .screen {
+            background-color: var(--bg-panel);
+            padding: 40px;
+            border-radius: 8px;
+            max-width: 850px;
+            width: 100%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-color);
+            box-sizing: border-box;
+        }
+
+        #app-screen { display: none; }
+
+        h1, h2, h3 { margin-top: 0; color: var(--text-main); }
+        p { color: var(--text-secondary); }
+
+        .tutorial-content {
+            background-color: #EBF3FF;
+            padding: 20px;
+            border-left: 4px solid var(--coursera-blue);
+            margin-bottom: 30px;
+        }
+
+        button.btn-primary {
+            background-color: var(--coursera-blue);
+            color: #FFFFFF;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button.btn-primary:hover { background-color: var(--coursera-blue-hover); }
+        button:focus, .data-block:focus { outline: 3px solid #82B1FF; outline-offset: 2px; }
+
+        /* Hardware Dashboard */
+        .hardware-panel {
+            background-color: #111;
+            color: #fff;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+        }
+
+        .lcd-screen {
+            background-color: #1a2a1a;
+            border: 2px solid #2e4a2e;
+            color: #4af626;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .lcd-line { margin-bottom: 5px; font-weight: bold; }
+
+        /* Puzzle Work Area */
+        .puzzle-container {
+            margin: 25px 0;
+        }
+
+        .slots-row, .blocks-pool {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            min-height: 80px;
+            padding: 15px;
+            background-color: #FAFAFA;
+            border: 2px dashed var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .slot {
+            width: 220px;
+            height: 70px;
+            background-color: #eee;
+            border: 2px dashed #bbb;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .data-block {
+            width: 210px;
+            height: 60px;
+            background-color: #fff;
+            border: 2px solid var(--coursera-blue);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        .data-block:active { transform: scale(0.97); }
+        .data-block .block-code { font-weight: bold; color: var(--coursera-blue); }
+        .data-block .block-desc { font-size: 11px; color: var(--text-secondary); }
+
+        .btn-action-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .btn-secondary {
+            background-color: #636363;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .mission-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #F9F9F9;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        .mission-title { font-weight: bold; color: var(--coursera-blue); margin-bottom: 10px; }
+        .success-text { color: var(--success-green); font-weight: bold; }
+        
+        .alert-box {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: none;
+        }
+        .alert-error { background-color: #FFEBEE; color: var(--danger-red); border-left: 4px solid var(--danger-red); }
+        .alert-success { background-color: #E8F5E9; color: var(--success-green); border-left: 4px solid var(--success-green); }
+    </style>
+</head>
+<body>
+
+    <!-- Tutorial Screen -->
+    <div id="tutorial-screen" class="screen" role="dialog" aria-labelledby="tutorial-title">
+        <h1 id="tutorial-title">MIDI Postal Dispatcher Simulator</h1>
+        <div class="tutorial-content">
+            <p><strong>Objective:</strong> Master MIDI memory addressing (Bank Select CC 0, CC 32, and Program Change) to prevent the notorious <em>latched bank error</em>.</p>
+            <p><strong>Instructions:</strong></p>
+            <ol>
+                <li>Click <strong>Start Simulator</strong> to power on the multitimbral synthesizer.</li>
+                <li>Remember the Postal Analogy: <strong>Bank Select is the Street Name</strong> (CC 0 & CC 32); <strong>Program Change is the House Number</strong>.</li>
+                <li>Click on any data block in the pool to move it into the sequencer transmission slots, or click it inside a slot to send it back.</li>
+                <li>Follow the <strong>5 sequential missions</strong> to deliver presets accurately without latching obsolete banks.</li>
+            </ol>
+        </div>
+        <button id="btn-start" class="btn-primary" tabindex="0">Start Simulator</button>
+    </div>
+
+    <!-- Main Screen -->
+    <div id="app-screen" class="screen" role="main" aria-hidden="true">
+        <h2>MIDI Postal Delivery</h2>
+        <p>Route the correct data packets in chronological order to recall target patches.</p>
+
+        <!-- Hardware Visualizer -->
+        <div class="hardware-panel">
+            <div class="lcd-screen" aria-live="polite">
+                <div class="lcd-line">> SYNTH MEMORY STATUS</div>
+                <div class="lcd-line">LATCHED BANK: <span id="disp-bank">BANK 1 (Factory)</span></div>
+                <div class="lcd-line">ACTIVE PROGRAM: <span id="disp-prog">001 (Init Lead)</span></div>
+                <div class="lcd-line">AUDIBLE TIMBRE: <span id="disp-timbre">Sawtooth Lead</span></div>
+            </div>
+            <div>
+                <h3 style="color:#fff; margin-top:0;">Target Destination:</h3>
+                <div id="target-box" style="background:#222; padding:10px; border-radius:4px; font-size:14px; color:#ddd;">
+                    Target: <strong>Bank 2, Program 47</strong> (Warm Strings)
+                </div>
+                <div id="alert-display" class="alert-box"></div>
+            </div>
+        </div>
+
+        <!-- Puzzle Transmission Area -->
+        <div class="puzzle-container">
+            <label style="font-weight:bold; margin-bottom:5px; display:block;">1. Sequencer Transmission Order (Chronological Execution):</label>
+            <div class="slots-row" id="slots-area">
+                <div class="slot" data-slot="1">1st Message</div>
+                <div class="slot" data-slot="2">2nd Message</div>
+                <div class="slot" data-slot="3">3rd Message</div>
+            </div>
+
+            <label style="font-weight:bold; margin-bottom:5px; display:block;">2. Available MIDI Message Packets (Click to Load):</label>
+            <div class="blocks-pool" id="pool-area">
+                <div class="data-block" id="blk-cc0" tabindex="0" data-msg="cc0">
+                    <span class="block-code">CC 0 (Bank MSB = 2)</span>
+                    <span class="block-desc">"Street Name, Part 1"</span>
+                </div>
+                <div class="data-block" id="blk-cc32" tabindex="0" data-msg="cc32">
+                    <span class="block-code">CC 32 (Bank LSB = 0)</span>
+                    <span class="block-desc">"Street Name, Part 2"</span>
+                </div>
+                <div class="data-block" id="blk-pc47" tabindex="0" data-msg="pc47">
+                    <span class="block-code">Program Change 47</span>
+                    <span class="block-desc">"House Number = 47"</span>
+                </div>
+            </div>
+
+            <div class="btn-action-row">
+                <button id="btn-transmit" class="btn-primary">Transmit Sequence to Synth</button>
+                <button id="btn-clear" class="btn-secondary">Clear Sequence</button>
+                <button id="btn-test-sound" class="btn-secondary">Audition Sound</button>
+            </div>
+        </div>
+        
+        <div class="mission-box" aria-live="polite">
+            <div id="mission-title" class="mission-title">Mission 1/5: The Blind Program Change (Guided)</div>
+            <div id="mission-status">Place <strong>ONLY Program Change 47</strong> into Slot 1 and click <strong>Transmit Sequence</strong>. Notice how sending just the house number falls back to the old street (Latched Bank 1), recalling an electric bass instead of strings!</div>
+        </div>
+    </div>
+
+    <script>
+        const tutorialScreen = document.getElementById('tutorial-screen');
+        const appScreen = document.getElementById('app-screen');
+        const btnStart = document.getElementById('btn-start');
+        
+        const dispBank = document.getElementById('disp-bank');
+        const dispProg = document.getElementById('disp-prog');
+        const dispTimbre = document.getElementById('disp-timbre');
+        const alertBox = document.getElementById('alert-display');
+        const targetBox = document.getElementById('target-box');
+
+        const slotsArea = document.getElementById('slots-area');
+        const poolArea = document.getElementById('pool-area');
+        const btnTransmit = document.getElementById('btn-transmit');
+        const btnClear = document.getElementById('btn-clear');
+        const btnTestSound = document.getElementById('btn-test-sound');
+
+        const mTitle = document.getElementById('mission-title');
+        const mStatus = document.getElementById('mission-status');
+
+        let audioCtx, activeOsc, activeGain;
+        let currentMission = 1;
+
+        // Current Hardware State
+        let memoryState = {
+            stagedBankMSB: null,
+            stagedBankLSB: null,
+            latchedBank: 1,
+            activeProgram: 1,
+            timbre: "Sawtooth Lead"
+        };
+
+        btnStart.addEventListener('click', () => {
+            tutorialScreen.style.display = 'none';
+            appScreen.style.display = 'block';
+            initAudio();
+        });
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Audition synthesizer sound based on current timbre
+        function playTone() {
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            if (activeOsc) {
+                activeOsc.stop();
+                activeOsc.disconnect();
+            }
+
+            const now = audioCtx.currentTime;
+            activeOsc = audioCtx.createOscillator();
+            activeGain = audioCtx.createGain();
+
+            if (memoryState.timbre === "Sawtooth Lead") {
+                activeOsc.type = 'sawtooth';
+                activeOsc.frequency.value = 220; // A3
+                activeGain.gain.setValueAtTime(0.3, now);
+                activeGain.gain.linearRampToValueAtTime(0, now + 0.8);
+            } 
+            else if (memoryState.timbre === "Slap Bass (Wrong!)") {
+                activeOsc.type = 'triangle';
+                activeOsc.frequency.value = 82.41; // E2 (Low percussive)
+                activeGain.gain.setValueAtTime(0.6, now);
+                activeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+            } 
+            else if (memoryState.timbre === "Warm Strings (Target)") {
+                activeOsc.type = 'sawtooth';
+                activeOsc.frequency.value = 329.63; // E4
+                // Low-pass to simulate filtered warm strings
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 900;
+                activeOsc.connect(filter);
+                filter.connect(activeGain);
+
+                activeGain.gain.setValueAtTime(0, now);
+                activeGain.gain.linearRampToValueAtTime(0.4, now + 0.4);
+                activeGain.gain.linearRampToValueAtTime(0, now + 1.5);
+                activeGain.connect(audioCtx.destination);
+                activeOsc.start(now);
+                activeOsc.stop(now + 1.6);
+                return;
+            }
+
+            activeOsc.connect(activeGain);
+            activeGain.connect(audioCtx.destination);
+            activeOsc.start(now);
+            activeOsc.stop(now + 0.8);
+        }
+
+        // Block moving logic (Click-to-slot and Click-to-pool)
+        function setupBlockInteraction(block) {
+            block.addEventListener('click', () => {
+                if (block.parentElement.classList.contains('blocks-pool')) {
+                    // Find first empty slot
+                    const slots = slotsArea.querySelectorAll('.slot');
+                    for (let slot of slots) {
+                        if (!slot.querySelector('.data-block')) {
+                            slot.appendChild(block);
+                            break;
+                        }
+                    }
+                } else {
+                    // Send back to pool
+                    poolArea.appendChild(block);
+                }
+            });
+        }
+
+        document.querySelectorAll('.data-block').forEach(setupBlockInteraction);
+
+        btnClear.addEventListener('click', () => {
+            const placedBlocks = slotsArea.querySelectorAll('.data-block');
+            placedBlocks.forEach(b => poolArea.appendChild(b));
+            hideAlert();
+        });
+
+        btnTestSound.addEventListener('click', playTone);
+
+        function showAlert(msg, isSuccess) {
+            alertBox.style.display = 'block';
+            alertBox.className = isSuccess ? 'alert-box alert-success' : 'alert-box alert-error';
+            alertBox.innerHTML = msg;
+        }
+
+        function hideAlert() {
+            alertBox.style.display = 'none';
+        }
+
+        // Execute Sequence Simulation
+        btnTransmit.addEventListener('click', () => {
+            const slots = slotsArea.querySelectorAll('.slot');
+            let transmittedOrder = [];
+
+            slots.forEach(slot => {
+                const b = slot.querySelector('.data-block');
+                if (b) transmittedOrder.push(b.getAttribute('data-msg'));
+            });
+
+            if (transmittedOrder.length === 0) {
+                showAlert("Transmission queue is empty. Load blocks into slots first.", false);
+                return;
+            }
+
+            // Simulate MIDI 1.0 message sequence processing
+            let stagedMSB = memoryState.stagedBankMSB;
+            let stagedLSB = memoryState.stagedBankLSB;
+            let latchedBank = memoryState.latchedBank;
+            let activeProg = memoryState.activeProgram;
+            let timbre = memoryState.timbre;
+            let hasError = false;
+
+            for (let msg of transmittedOrder) {
+                if (msg === 'cc0') {
+                    stagedMSB = 2; // Staging Bank 2
+                } else if (msg === 'cc32') {
+                    stagedLSB = 0;
+                } else if (msg === 'pc47') {
+                    // Program Change triggers the bank commit
+                    if (stagedMSB !== null && stagedLSB !== null) {
+                        latchedBank = stagedMSB;
+                        activeProg = 47;
+                        timbre = "Warm Strings (Target)";
+                    } else {
+                        // Latched Bank Error!
+                        activeProg = 47;
+                        latchedBank = memoryState.latchedBank; // Keeps previous active bank
+                        timbre = "Slap Bass (Wrong!)";
+                        hasError = true;
+                    }
+                }
+            }
+
+            memoryState.stagedBankMSB = stagedMSB;
+            memoryState.stagedBankLSB = stagedLSB;
+            memoryState.latchedBank = latchedBank;
+            memoryState.activeProgram = activeProg;
+            memoryState.timbre = timbre;
+
+            // Update LCD
+            dispBank.textContent = `BANK ${latchedBank} ${latchedBank === 2 ? '(User Orchestral)' : '(Factory)'}`;
+            dispProg.textContent = `${activeProg.toString().padStart(3, '0')}`;
+            dispTimbre.textContent = timbre;
+
+            playTone();
+            checkMissions(transmittedOrder, hasError);
+        });
+
+        function checkMissions(order, hasError) {
+            const seq = order.join(' -> ');
+
+            if (currentMission === 1 && order.length === 1 && order[0] === 'pc47') {
+                currentMission = 2;
+                showAlert("<strong>Latched Bank Error Simulated!</strong> Bank Select was omitted, so Program 47 was pulled from Bank 1 (Slap Bass).", false);
+                mTitle.textContent = "Mission 2/5: The Missing LSB (Guided)";
+                mStatus.innerHTML = "Clear slots. Now send <strong>CC 0</strong> followed directly by <strong>Program Change 47</strong> (omitting CC 32). Transmit to observe what happens.";
+            }
+            else if (currentMission === 2 && order.length === 2 && order[0] === 'cc0' && order[1] === 'pc47') {
+                currentMission = 3;
+                showAlert("<strong>Incomplete Address!</strong> Bank Select requires both CC 0 (MSB) and CC 32 (LSB) in MIDI 1.0 to validate the street.", false);
+                mTitle.textContent = "Mission 3/5: The Inverted Order (Guided)";
+                mStatus.innerHTML = "Clear slots. Now place all 3 blocks, but put <strong>Program Change 47 first</strong>, followed by CC 0 and CC 32. Transmit sequence.";
+            }
+            else if (currentMission === 3 && order[0] === 'pc47' && order.includes('cc0') && order.includes('cc32')) {
+                currentMission = 4;
+                showAlert("<strong>Out of Order Error!</strong> Program Change executed <em>before</em> the bank arrived, keeping the old bank active for that recall.", false);
+                mTitle.textContent = "Mission 4/5: The Strict Protocol Order (Guided)";
+                mStatus.innerHTML = "Clear slots. Now construct the universal standard order: <strong>CC 0 &rarr; CC 32 &rarr; Program Change 47</strong>. Transmit sequence!";
+            }
+            else if (currentMission === 4 && seq === 'cc0 -> cc32 -> pc47') {
+                currentMission = 5;
+                showAlert("<strong>Correct Delivery!</strong> Bank Select staged the address, and Program Change 47 recalled the target sound: Warm Strings.", true);
+                targetBox.innerHTML = "Target 2: Recall <strong>Bank 1, Program 01</strong> (Sawtooth Lead)";
+                mTitle.textContent = "Mission 5/5: Bank Switching Challenge (Guided)";
+                mStatus.innerHTML = "Your synth is now latched on Bank 2. If you transmit only Program Change 01, it will load strings! <br><strong>Task:</strong> You need to return to Bank 1. Clear your slots and send the correct sequence to recall Bank 1, Program 01 without bank-latch bugs.";
+            }
+            else if (currentMission === 5 && seq === 'cc0 -> cc32 -> pc47') {
+                // If they re-sent Bank 2, notify them
+                showAlert("You are still in Bank 2! We need to return to Bank 1.", false);
+            }
+            else if (currentMission === 5) {
+                currentMission = 6;
+                showAlert("<strong>Sequence Verified!</strong> You safely switched back to Bank 1 without latched bank corruption.", true);
+                mTitle.textContent = "Guided Exercise Completed!";
+                mTitle.classList.add('success-text');
+                mStatus.innerHTML = "<strong>Congratulations!</strong> You mastered MIDI 1.0 memory addressing. Remember: <strong>CC 0 &rarr; CC 32 &rarr; Program Change</strong> is the mandatory order to avoid corrupted recalls in multitimbral sessions.<br><br><em>You may now return to Coursera.</em>";
+            }
+        }
+    </script>
+</body>
+</html>
